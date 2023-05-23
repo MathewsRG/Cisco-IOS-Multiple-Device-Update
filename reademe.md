@@ -1,0 +1,1 @@
+This is just my random ramblings on how I can go about deploying the same command changes to multiple cisco appliances here at the University of Saskatchewan
