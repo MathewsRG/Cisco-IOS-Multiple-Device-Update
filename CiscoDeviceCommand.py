@@ -10,7 +10,7 @@ import netmiko
 from netmiko import ConnectHandler
 
 devices = [
-    'ryanswitchtest.usask.net'
+    'ryanswitchtest.<Domain>.net'
 ]
 
 # Prompt the user for credentials
