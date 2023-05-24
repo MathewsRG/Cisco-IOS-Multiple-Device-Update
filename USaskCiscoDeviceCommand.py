@@ -1,7 +1,10 @@
 # Ryan Mathews
 # USask Network Programming Analyst
 # This script will update a list of Cisco IOS appliances to configure the same batch of commands on each
+# Version 1.0 - Basic Variable Creation
 # Version 2.0 - Figuring out Netmiko as paramiko fucking sucks
+# Version 3.0 - Abandoning executing commands over SSH and instead using just net_connect
+# Ditching
 
 import netmiko 
 from netmiko import ConnectHandler
@@ -11,45 +14,52 @@ devices = [
 ]
 
 # Prompt the user for credentials
-username = input("Username: ")
+username = input("NSID: ")
 password = input("Password: ")
 
 # Commands to execute on each device
 commands = [
-    'conf t',
-    'vlan 666',
-#    'exit',
-#    'interface vlan 666',
-#    'description TEST',
-    # Add more commands here as needed
+    'interface gigabitEthernet 2/0/3',
+    'no description',
+    'interface gigabiEthernet 2/0/3', #ISSUE: Even if commands are missspelled, the output still says they were all successful......
+    'description fail'
+# Add more commands here as needed
 ]
 
-# SSH connection parameters
-ssh_params = {
-    'device_type': 'cisco_ios',
-    'username': username,
-    'password': password,
-}
-
-# Loop through each device
 for device in devices:
-    print(f"\nConnecting to {device}...")
-    ssh_params['host'] = device
-
     try:
-        # Establish SSH connection
-        ssh_conn = ConnectHandler(**ssh_params)
+        # Create a Netmiko connection handler for the device
+        net_connect = ConnectHandler(
+            device_type="cisco_ios",
+            host=device,
+            username=username,
+            password=password,
+        )
+    
+        # Enter global configuration mode
+        net_connect.config_mode()
 
-        # Execute commands on the device
+        # Execute the commands in global configuration mode
+        output = net_connect.send_config_set(commands)
+
+        # Check if all commands were executed successfully
+        success_flag = True
         for command in commands:
-            output = ssh_conn.send_command(command)
-            print(f"\nCommand: {command}\n")
-            print(output)
+            if command not in output:
+                success_flag = False
+                break
 
-        # Close the SSH connection
-        ssh_conn.disconnect()
+        # If all commands were executed successfully, print the output
+        if success_flag:
+            print(f"All commands executed successfully on {device}.") #ISSUE: Even if commands are missspelled, the output still says they were all successful......
+        else:
+            print(f"Not all commands were executed successfully on {device}.")
 
-        print(f"\nCommands executed successfully on {device}.")
+        # Exit global configuration mode
+        net_connect.exit_config_mode()
+
+        # Disconnect from the device
+        net_connect.disconnect()
+
     except Exception as e:
-        print(f"\nUnable to connect to {device}. Error: {str(e)}")
-        print(f"\n{device} SSH connection failed.")
+        print(f"Failed to connect to {device}. Error: {str(e)}")
